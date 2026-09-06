@@ -1,1 +1,45 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc"><title id="title">Tithonia</title><desc id="desc">Tithonia gold monogram on burgundy medallion</desc><defs><radialGradient id="bg" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#6f1d1a"/><stop offset=".55" stop-color="#4a0f0e"/><stop offset="1" stop-color="#260807"/></radialGradient><linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0bd"/><stop offset=".28" stop-color="#e1b56c"/><stop offset=".55" stop-color="#a76b25"/><stop offset=".78" stop-color="#f3d28c"/><stop offset="1" stop-color="#bd7d2e"/></linearGradient><filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#140302" flood-opacity=".45"/></filter></defs><circle cx="256" cy="256" r="246" fill="url(#bg)" stroke="url(#gold)" stroke-width="6"/><circle cx="256" cy="256" r="232" fill="none" stroke="#d4a154" stroke-opacity=".28"/><g filter="url(#shadow)" fill="url(#gold)"><path d="M128 132h256v54h-17c-6-22-18-36-36-42-14-5-33-7-56-7h-5v197c0 31 4 50 12 58 7 7 23 11 48 13v14H182v-14c26-2 42-7 49-14 7-8 11-27 11-57V137h-6c-23 0-42 2-56 7-19 7-31 21-36 42h-16z"/><path d="M236 260c27 19 39 43 36 70-3 24-14 42-34 54 31-7 53-25 65-55 10-26 7-50-10-73-15-21-36-35-63-42 18 12 27 27 27 44 0 8-2 15-6 22-4-8-9-15-15-20z"/><path d="M275 384c27-12 43-31 47-58 3-18 0-35-8-49 22 16 34 38 36 65 1 21-4 39-15 54 18-7 31-18 39-34-3 30-20 51-49 64-20 9-43 12-68 8 12-16 18-33 18-50z"/></g><text x="256" y="454" text-anchor="middle" fill="url(#gold)" font-family="Georgia, 'Times New Roman', serif" font-size="46" letter-spacing="10">TITHONIA</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<title id="title">Tithonia</title><desc id="desc">Luxury Tithonia gold monogram on deep maroon medallion</desc>
+<defs>
+  <radialGradient id="maroon" cx="42%" cy="28%" r="85%">
+    <stop offset="0" stop-color="#7a1717"/>
+    <stop offset="0.46" stop-color="#5a0e0d"/>
+    <stop offset="0.78" stop-color="#3b0808"/>
+    <stop offset="1" stop-color="#230404"/>
+  </radialGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#fff2bd"/>
+    <stop offset="0.16" stop-color="#e7b95a"/>
+    <stop offset="0.36" stop-color="#b56c16"/>
+    <stop offset="0.58" stop-color="#ffd984"/>
+    <stop offset="0.8" stop-color="#b8751e"/>
+    <stop offset="1" stop-color="#f4ce77"/>
+  </linearGradient>
+  <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#fff0b0"/>
+    <stop offset="0.3" stop-color="#c77a1c"/>
+    <stop offset="0.55" stop-color="#ffe39a"/>
+    <stop offset="1" stop-color="#9d5a13"/>
+  </linearGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+    <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#180000" flood-opacity=".55"/>
+  </filter>
+  <filter id="softglow" x="-100%" y="-100%" width="300%" height="300%">
+    <feGaussianBlur stdDeviation="3" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+</defs>
+<circle cx="256" cy="256" r="248" fill="#240303"/>
+<circle cx="256" cy="256" r="242" fill="url(#maroon)" stroke="url(#rim)" stroke-width="5"/>
+<circle cx="256" cy="256" r="232" fill="none" stroke="#f2c96e" stroke-width="2" opacity=".9"/>
+<circle cx="256" cy="256" r="224" fill="none" stroke="#8f5319" stroke-width="1.2" opacity=".65"/>
+<g filter="url(#shadow)" fill="url(#gold)">
+  <path d="M130 104h252v60h-15c-5-22-18-37-38-44-16-6-36-9-60-9h-3v214c0 35 4 56 12 65 8 8 25 13 51 15v14H184v-14c26-2 43-7 51-15 8-9 12-30 12-65V111h-4c-24 0-44 3-60 9-21 8-34 22-38 44h-15z"/>
+  <path d="M231 243c18 15 31 30 38 47 7 17 8 33 4 49-5 20-17 37-36 51 27-7 48-22 61-46 14-25 16-50 6-74-11-27-33-48-66-63 18 16 27 31 27 46 0 11-3 21-9 30-5-14-14-28-25-40z"/>
+  <path d="M267 388c26-12 44-31 53-58 6-19 6-37 0-55 18 18 28 39 29 63 1 19-4 36-15 52 18-7 31-18 40-34-2 31-18 54-49 68-22 10-47 13-76 9 12-15 18-30 18-45z"/>
+</g>
+<g filter="url(#softglow)">
+  <path d="M226 248l6 14 15 2-12 9 4 15-13-8-13 8 4-15-12-9 15-2z" fill="#ffe8a0" opacity=".95"/>
+</g>
+<text x="256" y="460" text-anchor="middle" fill="url(#gold)" font-family="Georgia, 'Times New Roman', serif" font-size="43" letter-spacing="12">TITHONIA</text>
+</svg>
