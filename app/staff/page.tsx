@@ -8,6 +8,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
 );
 
+const STAFF_EMAIL = "tithonia.online@gmail.com";
 const box: React.CSSProperties = {maxWidth:1100,margin:"40px auto",padding:24,fontFamily:"Arial, sans-serif",color:"#2c1914"};
 const card: React.CSSProperties = {background:"#fff",border:"1px solid #e5d7c8",borderRadius:14,padding:22,boxShadow:"0 10px 30px rgba(70,30,15,.07)"};
 const input: React.CSSProperties = {width:"100%",padding:"11px 12px",border:"1px solid #d8c7b7",borderRadius:8,background:"#fffdf9"};
@@ -19,8 +20,8 @@ export default function StaffPage(){
   const [allowed,setAllowed]=useState(false);
   const [msg,setMsg]=useState("");
   const [busy,setBusy]=useState(false);
-  const [authMode,setAuthMode]=useState<"signin"|"signup">("signin");
-  const [email,setEmail]=useState("");
+  const [authMode,setAuthMode]=useState<"signin"|"signup">("signup");
+  const [email,setEmail]=useState(STAFF_EMAIL);
   const [password,setPassword]=useState("");
   const [invite,setInvite]=useState("");
   const [image,setImage]=useState<File|null>(null);
@@ -46,8 +47,8 @@ export default function StaffPage(){
       : await supabase.auth.signUp({email,password});
     setBusy(false);
     if(res.error){setMsg(res.error.message);return;}
-    if(authMode==="signup" && !res.data.session) setMsg("Account created. Check email confirmation, then sign in.");
-    else setMsg("Signed in.");
+    if(authMode==="signup" && !res.data.session) setMsg("Account created. Please confirm the email once, then return here and sign in. Staff permission is already prepared for this email.");
+    else setMsg("Signed in. Staff access is ready.");
   }
 
   async function claim(){
@@ -106,19 +107,19 @@ export default function StaffPage(){
     <div style={{...card,maxWidth:460}}>
       <form onSubmit={authSubmit} style={{display:"grid",gap:12}}>
         <input style={input} type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} required/>
-        <input style={input} type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} minLength={8} required/>
-        <button style={btn} disabled={busy}>{busy?"Please wait...":authMode==="signin"?"Sign in":"Create account"}</button>
+        <input style={input} type="password" placeholder="Choose password (minimum 8 characters)" value={password} onChange={e=>setPassword(e.target.value)} minLength={8} required/>
+        <button style={btn} disabled={busy}>{busy?"Please wait...":authMode==="signin"?"Sign in":"Create staff account"}</button>
       </form>
-      <button onClick={()=>setAuthMode(authMode==="signin"?"signup":"signin")} style={{marginTop:12,border:0,background:"transparent",cursor:"pointer",color:"#5b120f"}}>{authMode==="signin"?"First time? Create account":"Already have account? Sign in"}</button>
+      <button onClick={()=>setAuthMode(authMode==="signin"?"signup":"signin")} style={{marginTop:12,border:0,background:"transparent",cursor:"pointer",color:"#5b120f"}}>{authMode==="signin"?"First time? Create account":"Already created? Sign in"}</button>
       {msg&&<p>{msg}</p>}
     </div>
   </main>;
 
   if(!allowed) return <main style={box}>
-    <h1 style={{fontFamily:"Georgia,serif",fontWeight:400}}>Activate Staff Access</h1>
+    <h1 style={{fontFamily:"Georgia,serif",fontWeight:400}}>Activating Staff Access</h1>
     <div style={{...card,maxWidth:520}}>
-      <p>This account has no permissions yet. Enter the one-time access code.</p>
-      <div style={{display:"flex",gap:10}}><input style={input} value={invite} onChange={e=>setInvite(e.target.value)} placeholder="One-time access code"/><button style={btn} onClick={claim} disabled={busy}>Activate</button></div>
+      <p>If this is the approved staff email, permission should appear automatically after sign-in. If not, the backup one-time access code can still be used.</p>
+      <div style={{display:"flex",gap:10}}><input style={input} value={invite} onChange={e=>setInvite(e.target.value)} placeholder="Backup one-time access code"/><button style={btn} onClick={claim} disabled={busy}>Activate</button></div>
       <button onClick={()=>supabase.auth.signOut()} style={{marginTop:14,border:0,background:"transparent",cursor:"pointer"}}>Sign out</button>
       {msg&&<p>{msg}</p>}
     </div>
