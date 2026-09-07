@@ -28,9 +28,6 @@ export default function StaffPage(){
   const [allowed,setAllowed]=useState(false);
   const [msg,setMsg]=useState("");
   const [busy,setBusy]=useState(false);
-  const [authMode,setAuthMode]=useState<"signin"|"signup">("signup");
-  const [email,setEmail]=useState(STAFF_EMAIL);
-  const [password,setPassword]=useState("");
   const [invite,setInvite]=useState("");
   const [image,setImage]=useState<File|null>(null);
   const [preview,setPreview]=useState<string|null>(null);
@@ -67,12 +64,16 @@ export default function StaffPage(){
     if(!d.error)setOwnDiscounts((d.data||[]) as OwnDiscount[]);
   }
 
-  async function authSubmit(e:FormEvent){
-    e.preventDefault();setBusy(true);setMsg("");
-    const res=authMode==="signin"?await supabase.auth.signInWithPassword({email,password}):await supabase.auth.signUp({email,password});
+  async function passwordlessLogin(){
+    setBusy(true);setMsg("");
+    const redirectTo=`${window.location.origin}/staff`;
+    const {error}=await supabase.auth.signInWithOtp({
+      email:STAFF_EMAIL,
+      options:{emailRedirectTo:redirectTo,shouldCreateUser:true}
+    });
     setBusy(false);
-    if(res.error){setMsg(res.error.message);return;}
-    if(authMode==="signup"&&!res.data.session)setMsg("Account created. Confirm the email once, then sign in.");else setMsg("Signed in. Staff access is ready.");
+    if(error){setMsg(`Could not send access link: ${error.message}`);return;}
+    setMsg("Access link sent to tithonia.online@gmail.com. Open that email and tap the login link. No password is required.");
   }
 
   async function claim(){
@@ -145,7 +146,15 @@ export default function StaffPage(){
 
   const dt=(v:string|null)=>v?new Date(v).toISOString().slice(0,16):"";
 
-  if(!session)return <main style={box}><h1 style={{fontFamily:"Georgia,serif",fontWeight:400}}>TITHONIA Staff Access</h1><div style={{...card,maxWidth:460}}><form onSubmit={authSubmit} style={{display:"grid",gap:12}}><input style={input} type="email" value={email} onChange={e=>setEmail(e.target.value)} required/><input style={input} type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} minLength={8} required/><button style={btn} disabled={busy}>{busy?"Please wait...":authMode==="signin"?"Sign in":"Create staff account"}</button></form><button onClick={()=>setAuthMode(authMode==="signin"?"signup":"signin")} style={{marginTop:12,border:0,background:"transparent",cursor:"pointer",color:"#5b120f"}}>{authMode==="signin"?"First time? Create account":"Already created? Sign in"}</button>{msg&&<p>{msg}</p>}</div></main>;
+  if(!session)return <main style={box}>
+    <h1 style={{fontFamily:"Georgia,serif",fontWeight:400}}>TITHONIA Staff Access</h1>
+    <div style={{...card,maxWidth:520}}>
+      <p style={{marginTop:0,color:"#765f54"}}>Password লাগবে না। নিচের button চাপলে শুধু approved Gmail-এ secure login link যাবে।</p>
+      <div style={{...input,marginBottom:12,color:"#2c1914",fontWeight:700}}>{STAFF_EMAIL}</div>
+      <button style={{...btn,width:"100%"}} onClick={passwordlessLogin} disabled={busy}>{busy?"Sending access link...":"Continue with this Gmail"}</button>
+      {msg&&<p style={{lineHeight:1.5}}>{msg}</p>}
+    </div>
+  </main>;
 
   if(!allowed)return <main style={box}><h1 style={{fontFamily:"Georgia,serif",fontWeight:400}}>Activating Staff Access</h1><div style={{...card,maxWidth:520}}><p>Approved staff email gets limited permissions only.</p><div style={{display:"flex",gap:10}}><input style={input} value={invite} onChange={e=>setInvite(e.target.value)} placeholder="Backup one-time access code"/><button style={btn} onClick={claim} disabled={busy}>Activate</button></div><button onClick={()=>supabase.auth.signOut()} style={{marginTop:14,border:0,background:"transparent"}}>Sign out</button>{msg&&<p>{msg}</p>}</div></main>;
 
