@@ -19,6 +19,10 @@ const uploadBox: React.CSSProperties = {border:"2px dashed #8f5a4b",borderRadius
 type OwnProduct={id:string;name:string;image_url:string|null};
 type OwnDiscount={id:string;code:string;type:"percent"|"fixed";value:number;min_order:number;starts_at:string|null;ends_at:string|null;max_uses:number|null;active:boolean};
 
+function slugify(v:string){
+  return v.toLowerCase().trim().replace(/['’]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,70)||"product";
+}
+
 export default function StaffPage(){
   const [session,setSession]=useState<Session|null>(null);
   const [allowed,setAllowed]=useState(false);
@@ -81,22 +85,28 @@ export default function StaffPage(){
 
   async function uploadToProductImages(file:File){
     if(!session) throw new Error("Not signed in");
-    const ext=file.name.split(".").pop()?.toLowerCase()||"jpg";
-    const path=`${session.user.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-    const up=await supabase.storage.from("product-images").upload(path,file,{upsert:false,contentType:file.type||undefined});
+    if(file.size>8*1024*1024) throw new Error("Image is too large. Maximum 8 MB.");
+    if(file.type && !file.type.startsWith("image/")) throw new Error("Please choose an image file.");
+    const ext=(file.name.split(".").pop()?.toLowerCase()||"jpg").replace(/[^a-z0-9]/g,"");
+    const path=`${session.user.id}/${Date.now()}-${crypto.randomUUID()}.${ext||"jpg"}`;
+    const up=await supabase.storage.from("product-images").upload(path,file,{upsert:false,contentType:file.type||"image/jpeg",cacheControl:"3600"});
     if(up.error) throw up.error;
     return supabase.storage.from("product-images").getPublicUrl(path).data.publicUrl;
   }
 
   async function addProduct(e:FormEvent<HTMLFormElement>){
     e.preventDefault(); if(!session||!allowed)return;
-    setBusy(true); setMsg("");
+    if(!image){setMsg("Please choose a product picture first.");return;}
+    setBusy(true); setMsg("Uploading picture...");
     const form=e.currentTarget;
     const f=new FormData(form);
     try{
-      const image_url=image?await uploadToProductImages(image):null;
+      const name=String(f.get("name")||"").trim();
+      const slug=`${slugify(name)}-${Date.now().toString(36)}-${crypto.randomUUID().slice(0,6)}`;
+      const image_url=await uploadToProductImages(image);
+      setMsg("Picture uploaded. Saving product...");
       const payload={
-        slug:String(f.get("slug")||"").trim(), name:String(f.get("name")||"").trim(), category:String(f.get("category")||""),
+        slug, name, category:String(f.get("category")||""),
         description:String(f.get("description")||"").trim(), price:Number(f.get("price")||0),
         compare_at_price:f.get("compare_at_price")?Number(f.get("compare_at_price")):null, stock:Number(f.get("stock")||0),
         sku:String(f.get("sku")||"").trim()||null, sizes:String(f.get("sizes")||"").split(",").map(x=>x.trim()).filter(Boolean),
@@ -105,15 +115,18 @@ export default function StaffPage(){
       };
       const {error}=await supabase.from("products").insert(payload);
       if(error) throw error;
-      form.reset(); setImage(null); await loadManageable(); setMsg("Product added successfully.");
-    }catch(err:any){setMsg(err?.message||"Could not add product.");}
+      form.reset(); setImage(null); await loadManageable(); setMsg("Product and picture uploaded successfully.");
+    }catch(err:any){
+      const text=String(err?.message||"Could not add product.");
+      setMsg(text.includes("products_slug_key")?"Product name conflict fixed automatically. Please tap Add Product again.":text);
+    }
     setBusy(false);
   }
 
   async function replaceOwnProductImage(e:FormEvent<HTMLFormElement>){
     e.preventDefault();
     if(!session||!allowed||!replaceProductId||!replacementImage){setMsg("Select your product and choose a new image first.");return;}
-    setBusy(true); setMsg("");
+    setBusy(true); setMsg("Uploading replacement picture...");
     try{
       const imageUrl=await uploadToProductImages(replacementImage);
       const {data,error}=await supabase.rpc("update_own_product_image",{p_product_id:replaceProductId,p_image_url:imageUrl});
@@ -195,14 +208,14 @@ export default function StaffPage(){
     {msg&&<div style={{...card,marginBottom:16,padding:14}}>{msg}</div>}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(360px,1fr))",gap:18}}>
       <section style={card}><h2>Add Product</h2><form onSubmit={addProduct} style={{display:"grid",gap:12}}>
-        <div style={grid}><input style={input} name="name" placeholder="Product name" required/><input style={input} name="slug" placeholder="product-slug" required/></div>
+        <input style={input} name="name" placeholder="Product name" required/>
         <div style={grid}><select style={input} name="category" required>{categories.map(c=><option key={c}>{c}</option>)}</select><input style={input} name="sku" placeholder="SKU (optional)"/></div>
         <textarea style={{...input,minHeight:90}} name="description" placeholder="Description" required/>
-        <div style={uploadBox}><strong style={{fontSize:18,color:"#5b120f"}}>Product Picture Upload</strong><span style={{fontSize:13,color:"#765f54"}}>Choose a product photo from your phone or computer.</span><input style={{...input,padding:14,background:"#fff"}} type="file" accept="image/*" onChange={e=>setImage(e.target.files?.[0]||null)} />{image&&<small style={{color:"#5b120f",fontWeight:700}}>Selected: {image.name}</small>}</div>
+        <div style={uploadBox}><strong style={{fontSize:18,color:"#5b120f"}}>Product Picture Upload *</strong><span style={{fontSize:13,color:"#765f54"}}>Picture is required. JPG, PNG, WEBP, HEIC and other phone image formats are accepted up to 8 MB.</span><input style={{...input,padding:14,background:"#fff"}} type="file" accept="image/*" required onChange={e=>setImage(e.target.files?.[0]||null)} />{image&&<small style={{color:"#5b120f",fontWeight:700}}>Selected: {image.name} ({(image.size/1024/1024).toFixed(2)} MB)</small>}</div>
         <div style={grid}><input style={input} name="price" type="number" min="0" step="0.01" placeholder="Price" required/><input style={input} name="compare_at_price" type="number" min="0" step="0.01" placeholder="Old price (optional)"/><input style={input} name="stock" type="number" min="0" placeholder="Stock" required/></div>
         <div style={grid}><input style={input} name="sizes" placeholder="Sizes: S, M, L"/><input style={input} name="colors" placeholder="Colors: Black, Maroon"/></div>
         <label><input type="checkbox" name="featured"/> Featured product</label>
-        <button style={btn} disabled={busy}>Add Product</button>
+        <button style={btn} disabled={busy}>{busy?"Uploading...":"Add Product"}</button>
       </form></section>
 
       <section style={card}><h2>Change Product Image</h2><p style={{color:"#765f54"}}>Only products uploaded by this staff account are listed.</p><form onSubmit={replaceOwnProductImage} style={{display:"grid",gap:12}}>
