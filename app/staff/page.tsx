@@ -219,7 +219,7 @@ export default function StaffPage(){
         <button style={btn} disabled={busy}>Add Discount</button>
       </form></section>
 
-      <section style={card}><h2>Edit Your Discounts</h2><p style={{color:"#765f54"}}>Only discounts created by this staff account can be changed. Delete remains blocked.</p>{ownDiscounts.length===0?<p>No editable discounts yet.</p>:<div style={{display:"grid",gap:14}}>{ownDiscounts.map(d=><form key={d.id} onSubmit={e=>editDiscount(e,d.id)} style={{border:"1px solid #eadfd4",borderRadius:10,padding:14,display:"grid",gap:10"}}>
+      <section style={card}><h2>Edit Your Discounts</h2><p style={{color:"#765f54"}}>Only discounts created by this staff account can be changed. Delete remains blocked.</p>{ownDiscounts.length===0?<p>No editable discounts yet.</p>:<div style={{display:"grid",gap:14}}>{ownDiscounts.map(d=><form key={d.id} onSubmit={e=>editDiscount(e,d.id)} style={{border:"1px solid #eadfd4",borderRadius:10,padding:14,display:"grid",gap:10}}>
         <div style={grid}><input style={input} name="code" defaultValue={d.code} required/><select style={input} name="type" defaultValue={d.type}><option value="percent">Percent</option><option value="fixed">Fixed amount</option></select></div>
         <div style={grid}><input style={input} name="value" type="number" min="0" step="0.01" defaultValue={d.value} required/><input style={input} name="min_order" type="number" min="0" step="0.01" defaultValue={d.min_order}/></div>
         <div style={grid}><label>Starts at<input style={input} name="starts_at" type="datetime-local" defaultValue={dt(d.starts_at)}/></label><label>Ends at<input style={input} name="ends_at" type="datetime-local" defaultValue={dt(d.ends_at)}/></label></div>
