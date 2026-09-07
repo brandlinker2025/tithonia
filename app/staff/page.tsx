@@ -16,6 +16,9 @@ const btn: React.CSSProperties = {border:0,borderRadius:8,padding:"12px 16px",ba
 const grid: React.CSSProperties = {display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:12};
 const uploadBox: React.CSSProperties = {border:"2px dashed #8f5a4b",borderRadius:12,padding:"18px",background:"#fff8f2",display:"grid",gap:8};
 
+type OwnProduct={id:string;name:string;image_url:string|null};
+type OwnDiscount={id:string;code:string;type:"percent"|"fixed";value:number;min_order:number;starts_at:string|null;ends_at:string|null;max_uses:number|null;active:boolean};
+
 export default function StaffPage(){
   const [session,setSession]=useState<Session|null>(null);
   const [allowed,setAllowed]=useState(false);
@@ -26,6 +29,10 @@ export default function StaffPage(){
   const [password,setPassword]=useState("");
   const [invite,setInvite]=useState("");
   const [image,setImage]=useState<File|null>(null);
+  const [replacementImage,setReplacementImage]=useState<File|null>(null);
+  const [replaceProductId,setReplaceProductId]=useState("");
+  const [ownProducts,setOwnProducts]=useState<OwnProduct[]>([]);
+  const [ownDiscounts,setOwnDiscounts]=useState<OwnDiscount[]>([]);
 
   useEffect(()=>{
     supabase.auth.getSession().then(({data})=>setSession(data.session));
@@ -39,7 +46,18 @@ export default function StaffPage(){
       .then(({data})=>setAllowed(Boolean(data)));
   },[session]);
 
+  useEffect(()=>{ if(allowed) loadManageable(); },[allowed]);
+
   const categories=useMemo(()=>["T-Shirt","Three Piece","Saree","Shoes"],[]);
+
+  async function loadManageable(){
+    const [p,d]=await Promise.all([
+      supabase.from("products").select("id,name,image_url").order("created_at",{ascending:false}),
+      supabase.from("discounts").select("id,code,type,value,min_order,starts_at,ends_at,max_uses,active").order("created_at",{ascending:false})
+    ]);
+    if(!p.error){ setOwnProducts((p.data||[]) as OwnProduct[]); if(!replaceProductId && p.data?.[0]?.id) setReplaceProductId(p.data[0].id); }
+    if(!d.error) setOwnDiscounts((d.data||[]) as OwnDiscount[]);
+  }
 
   async function authSubmit(e:FormEvent){
     e.preventDefault(); setBusy(true); setMsg("");
@@ -61,47 +79,90 @@ export default function StaffPage(){
     setAllowed(true); setInvite(""); setMsg("Contributor access activated.");
   }
 
+  async function uploadToProductImages(file:File){
+    if(!session) throw new Error("Not signed in");
+    const ext=file.name.split(".").pop()?.toLowerCase()||"jpg";
+    const path=`${session.user.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+    const up=await supabase.storage.from("product-images").upload(path,file,{upsert:false,contentType:file.type||undefined});
+    if(up.error) throw up.error;
+    return supabase.storage.from("product-images").getPublicUrl(path).data.publicUrl;
+  }
+
   async function addProduct(e:FormEvent<HTMLFormElement>){
     e.preventDefault(); if(!session||!allowed)return;
     setBusy(true); setMsg("");
-    const f=new FormData(e.currentTarget);
-    let image_url:string|null=null;
-    if(image){
-      const ext=image.name.split(".").pop()?.toLowerCase()||"jpg";
-      const path=`${session.user.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-      const up=await supabase.storage.from("product-images").upload(path,image,{upsert:false,contentType:image.type||undefined});
-      if(up.error){setBusy(false);setMsg(up.error.message);return;}
-      image_url=supabase.storage.from("product-images").getPublicUrl(path).data.publicUrl;
-    }
-    const payload={
-      slug:String(f.get("slug")||"").trim(), name:String(f.get("name")||"").trim(), category:String(f.get("category")||""),
-      description:String(f.get("description")||"").trim(), price:Number(f.get("price")||0),
-      compare_at_price:f.get("compare_at_price")?Number(f.get("compare_at_price")):null, stock:Number(f.get("stock")||0),
-      sku:String(f.get("sku")||"").trim()||null, sizes:String(f.get("sizes")||"").split(",").map(x=>x.trim()).filter(Boolean),
-      colors:String(f.get("colors")||"").split(",").map(x=>x.trim()).filter(Boolean), image_url,
-      featured:f.get("featured")==="on", active:true
-    };
-    const {error}=await supabase.from("products").insert(payload);
+    const form=e.currentTarget;
+    const f=new FormData(form);
+    try{
+      const image_url=image?await uploadToProductImages(image):null;
+      const payload={
+        slug:String(f.get("slug")||"").trim(), name:String(f.get("name")||"").trim(), category:String(f.get("category")||""),
+        description:String(f.get("description")||"").trim(), price:Number(f.get("price")||0),
+        compare_at_price:f.get("compare_at_price")?Number(f.get("compare_at_price")):null, stock:Number(f.get("stock")||0),
+        sku:String(f.get("sku")||"").trim()||null, sizes:String(f.get("sizes")||"").split(",").map(x=>x.trim()).filter(Boolean),
+        colors:String(f.get("colors")||"").split(",").map(x=>x.trim()).filter(Boolean), image_url,
+        featured:f.get("featured")==="on", active:true, created_by:session.user.id
+      };
+      const {error}=await supabase.from("products").insert(payload);
+      if(error) throw error;
+      form.reset(); setImage(null); await loadManageable(); setMsg("Product added successfully.");
+    }catch(err:any){setMsg(err?.message||"Could not add product.");}
     setBusy(false);
-    if(error){setMsg(error.message);return;}
-    e.currentTarget.reset(); setImage(null); setMsg("Product added successfully. Existing products cannot be edited from this access.");
+  }
+
+  async function replaceOwnProductImage(e:FormEvent<HTMLFormElement>){
+    e.preventDefault();
+    if(!session||!allowed||!replaceProductId||!replacementImage){setMsg("Select your product and choose a new image first.");return;}
+    setBusy(true); setMsg("");
+    try{
+      const imageUrl=await uploadToProductImages(replacementImage);
+      const {data,error}=await supabase.rpc("update_own_product_image",{p_product_id:replaceProductId,p_image_url:imageUrl});
+      if(error) throw error;
+      if(!data) throw new Error("You can only change images on products created by this staff account.");
+      setReplacementImage(null); await loadManageable(); setMsg("Product image updated successfully.");
+    }catch(err:any){setMsg(err?.message||"Could not update image.");}
+    setBusy(false);
   }
 
   async function addDiscount(e:FormEvent<HTMLFormElement>){
-    e.preventDefault(); if(!allowed)return;
+    e.preventDefault(); if(!session||!allowed)return;
     setBusy(true); setMsg("");
-    const f=new FormData(e.currentTarget);
+    const form=e.currentTarget;
+    const f=new FormData(form);
     const payload={
       code:String(f.get("code")||"").trim().toUpperCase(), type:String(f.get("type")||"percent"), value:Number(f.get("value")||0),
       min_order:Number(f.get("min_order")||0), starts_at:f.get("starts_at")?new Date(String(f.get("starts_at"))).toISOString():null,
       ends_at:f.get("ends_at")?new Date(String(f.get("ends_at"))).toISOString():null,
-      max_uses:f.get("max_uses")?Number(f.get("max_uses")):null, used_count:0, active:true
+      max_uses:f.get("max_uses")?Number(f.get("max_uses")):null, used_count:0, active:true, created_by:session.user.id
     };
     const {error}=await supabase.from("discounts").insert(payload);
     setBusy(false);
     if(error){setMsg(error.message);return;}
-    e.currentTarget.reset(); setMsg("Discount added successfully. Existing discounts cannot be edited from this access.");
+    form.reset(); await loadManageable(); setMsg("Discount added successfully.");
   }
+
+  async function editDiscount(e:FormEvent<HTMLFormElement>,discountId:string){
+    e.preventDefault(); setBusy(true); setMsg("");
+    const f=new FormData(e.currentTarget);
+    const args={
+      p_discount_id:discountId,
+      p_code:String(f.get("code")||"").trim().toUpperCase(),
+      p_type:String(f.get("type")||"percent"),
+      p_value:Number(f.get("value")||0),
+      p_min_order:Number(f.get("min_order")||0),
+      p_starts_at:f.get("starts_at")?new Date(String(f.get("starts_at"))).toISOString():null,
+      p_ends_at:f.get("ends_at")?new Date(String(f.get("ends_at"))).toISOString():null,
+      p_max_uses:f.get("max_uses")?Number(f.get("max_uses")):null,
+      p_active:f.get("active")==="on"
+    };
+    const {data,error}=await supabase.rpc("update_own_discount",args);
+    setBusy(false);
+    if(error){setMsg(error.message);return;}
+    if(!data){setMsg("You can only edit discounts created by this staff account.");return;}
+    await loadManageable(); setMsg("Discount updated successfully.");
+  }
+
+  const dt=(v:string|null)=>v?new Date(v).toISOString().slice(0,16):"";
 
   if(!session) return <main style={box}>
     <h1 style={{fontFamily:"Georgia,serif",fontWeight:400}}>TITHONIA Staff Access</h1>
@@ -128,7 +189,7 @@ export default function StaffPage(){
 
   return <main style={box}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:20,flexWrap:"wrap"}}>
-      <div><h1 style={{fontFamily:"Georgia,serif",fontWeight:400,marginBottom:4}}>TITHONIA Contributor Panel</h1><p style={{marginTop:0,color:"#765f54"}}>Add-only access: product, image and discount creation only. No edit or delete permission.</p></div>
+      <div><h1 style={{fontFamily:"Georgia,serif",fontWeight:400,marginBottom:4}}>TITHONIA Contributor Panel</h1><p style={{marginTop:0,color:"#765f54"}}>Can add products, upload images and create discounts. Can replace images only for own products and edit only own discounts. No product detail edit and no delete permission.</p></div>
       <button style={btn} onClick={()=>supabase.auth.signOut()}>Sign out</button>
     </div>
     {msg&&<div style={{...card,marginBottom:16,padding:14}}>{msg}</div>}
@@ -137,18 +198,17 @@ export default function StaffPage(){
         <div style={grid}><input style={input} name="name" placeholder="Product name" required/><input style={input} name="slug" placeholder="product-slug" required/></div>
         <div style={grid}><select style={input} name="category" required>{categories.map(c=><option key={c}>{c}</option>)}</select><input style={input} name="sku" placeholder="SKU (optional)"/></div>
         <textarea style={{...input,minHeight:90}} name="description" placeholder="Description" required/>
-
-        <div style={uploadBox}>
-          <strong style={{fontSize:18,color:"#5b120f"}}>Product Picture Upload</strong>
-          <span style={{fontSize:13,color:"#765f54"}}>Tap below to choose a product photo from your phone or computer.</span>
-          <input style={{...input,padding:14,background:"#fff"}} type="file" accept="image/*" onChange={e=>setImage(e.target.files?.[0]||null)} />
-          {image&&<small style={{color:"#5b120f",fontWeight:700}}>Selected: {image.name}</small>}
-        </div>
-
+        <div style={uploadBox}><strong style={{fontSize:18,color:"#5b120f"}}>Product Picture Upload</strong><span style={{fontSize:13,color:"#765f54"}}>Choose a product photo from your phone or computer.</span><input style={{...input,padding:14,background:"#fff"}} type="file" accept="image/*" onChange={e=>setImage(e.target.files?.[0]||null)} />{image&&<small style={{color:"#5b120f",fontWeight:700}}>Selected: {image.name}</small>}</div>
         <div style={grid}><input style={input} name="price" type="number" min="0" step="0.01" placeholder="Price" required/><input style={input} name="compare_at_price" type="number" min="0" step="0.01" placeholder="Old price (optional)"/><input style={input} name="stock" type="number" min="0" placeholder="Stock" required/></div>
         <div style={grid}><input style={input} name="sizes" placeholder="Sizes: S, M, L"/><input style={input} name="colors" placeholder="Colors: Black, Maroon"/></div>
         <label><input type="checkbox" name="featured"/> Featured product</label>
         <button style={btn} disabled={busy}>Add Product</button>
+      </form></section>
+
+      <section style={card}><h2>Change Product Image</h2><p style={{color:"#765f54"}}>Only products uploaded by this staff account are listed.</p><form onSubmit={replaceOwnProductImage} style={{display:"grid",gap:12}}>
+        <select style={input} value={replaceProductId} onChange={e=>setReplaceProductId(e.target.value)} required><option value="">Select product</option>{ownProducts.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+        <div style={uploadBox}><strong>New Product Picture</strong><input style={{...input,padding:14,background:"#fff"}} type="file" accept="image/*" onChange={e=>setReplacementImage(e.target.files?.[0]||null)} required/>{replacementImage&&<small style={{color:"#5b120f",fontWeight:700}}>Selected: {replacementImage.name}</small>}</div>
+        <button style={btn} disabled={busy||!ownProducts.length}>Replace Image</button>
       </form></section>
 
       <section style={card}><h2>Add Discount</h2><form onSubmit={addDiscount} style={{display:"grid",gap:12}}>
@@ -158,6 +218,15 @@ export default function StaffPage(){
         <input style={input} name="max_uses" type="number" min="1" placeholder="Maximum uses (optional)"/>
         <button style={btn} disabled={busy}>Add Discount</button>
       </form></section>
+
+      <section style={card}><h2>Edit Your Discounts</h2><p style={{color:"#765f54"}}>Only discounts created by this staff account can be changed. Delete remains blocked.</p>{ownDiscounts.length===0?<p>No editable discounts yet.</p>:<div style={{display:"grid",gap:14}}>{ownDiscounts.map(d=><form key={d.id} onSubmit={e=>editDiscount(e,d.id)} style={{border:"1px solid #eadfd4",borderRadius:10,padding:14,display:"grid",gap:10"}}>
+        <div style={grid}><input style={input} name="code" defaultValue={d.code} required/><select style={input} name="type" defaultValue={d.type}><option value="percent">Percent</option><option value="fixed">Fixed amount</option></select></div>
+        <div style={grid}><input style={input} name="value" type="number" min="0" step="0.01" defaultValue={d.value} required/><input style={input} name="min_order" type="number" min="0" step="0.01" defaultValue={d.min_order}/></div>
+        <div style={grid}><label>Starts at<input style={input} name="starts_at" type="datetime-local" defaultValue={dt(d.starts_at)}/></label><label>Ends at<input style={input} name="ends_at" type="datetime-local" defaultValue={dt(d.ends_at)}/></label></div>
+        <input style={input} name="max_uses" type="number" min="1" defaultValue={d.max_uses??""} placeholder="Maximum uses"/>
+        <label><input type="checkbox" name="active" defaultChecked={d.active}/> Active</label>
+        <button style={btn} disabled={busy}>Save Discount Changes</button>
+      </form>)}</div>}</section>
     </div>
   </main>;
 }
