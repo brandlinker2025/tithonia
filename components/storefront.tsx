@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Heart, Menu, Search, ShieldCheck, ShoppingBag, Sparkles, Truck, X, Headphones, Gem, Phone, MapPin, MessageCircle } from "lucide-react";
+import { ArrowRight, Heart, Menu, Search, ShieldCheck, ShoppingBag, Sparkles, Truck, X, Headphones, Gem, Phone, MapPin } from "lucide-react";
 import type { CartItem, Product } from "@/lib/types";
 
 const KEY = "tithonia-cart-v1";
@@ -75,7 +75,14 @@ export default function Storefront(){
 
     <footer><div className="wrap footer-grid"><div><div className="footer-brand"><img src={LOGO} alt="Tithonia"/><span>TITHONIA</span></div><p>Premium fashion, thoughtfully curated and delivered across Bangladesh.</p></div><div><b>Shop</b><a href="#shop">New Arrivals</a><a href="#collections">Collections</a></div><div><b>Help</b><a href="tel:01626896050">01626896050</a><Link href="/checkout">Checkout</Link></div><div><b>Official Website</b><a href="https://www.tithonia.online">www.tithonia.online</a><small>East Monipur, Mirpur-10, Dhaka</small></div></div><div className="wrap footer-bottom">© {new Date().getFullYear()} TITHONIA. All rights reserved.</div></footer>
 
-    <a className="chat-fab" href="tel:01626896050" aria-label="Contact Tithonia"><MessageCircle size={22}/></a>
+    <a className="wa-fab" href="https://wa.me/8801626896050" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp Tithonia">
+      <span className="wa-fab-pulse" aria-hidden/>
+      <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden>
+        <path fill="#fff" d="M19.11 17.3c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.95 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.5h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.87 1.22 3.07c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.09 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.12-.27-.2-.57-.35z"/>
+        <path fill="#fff" d="M16.02 3C9.39 3 4 8.39 4 15.02c0 2.12.55 4.19 1.6 6.02L4 29l8.15-1.56A12 12 0 0 0 16.02 27C22.65 27 28 21.61 28 15.02 28 8.39 22.65 3 16.02 3zm0 21.96c-1.88 0-3.72-.5-5.33-1.45l-.38-.23-4.84.93.98-4.72-.25-.4A9.9 9.9 0 0 1 6.06 15c0-5.5 4.47-9.96 9.96-9.96S25.98 9.5 25.98 15s-4.46 9.96-9.96 9.96z"/>
+      </svg>
+      <span className="wa-fab-label">WhatsApp</span>
+    </a>
     <div className="contact-bar"><div className="wrap contact-bar-inner"><span><Phone size={14}/>01626896050</span><i/><span><MapPin size={14}/>East Monipur, Mirpur-10, Dhaka, Bangladesh</span><b>TITHONIA</b><span className="contact-domain">www.tithonia.online</span></div></div>
   </div>
 }
