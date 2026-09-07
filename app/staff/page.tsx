@@ -14,6 +14,7 @@ const card: React.CSSProperties = {background:"#fff",border:"1px solid #e5d7c8",
 const input: React.CSSProperties = {width:"100%",padding:"11px 12px",border:"1px solid #d8c7b7",borderRadius:8,background:"#fffdf9"};
 const btn: React.CSSProperties = {border:0,borderRadius:8,padding:"12px 16px",background:"#5b120f",color:"white",cursor:"pointer",fontWeight:700};
 const grid: React.CSSProperties = {display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:12};
+const uploadBox: React.CSSProperties = {border:"2px dashed #8f5a4b",borderRadius:12,padding:"18px",background:"#fff8f2",display:"grid",gap:8};
 
 export default function StaffPage(){
   const [session,setSession]=useState<Session|null>(null);
@@ -136,9 +137,16 @@ export default function StaffPage(){
         <div style={grid}><input style={input} name="name" placeholder="Product name" required/><input style={input} name="slug" placeholder="product-slug" required/></div>
         <div style={grid}><select style={input} name="category" required>{categories.map(c=><option key={c}>{c}</option>)}</select><input style={input} name="sku" placeholder="SKU (optional)"/></div>
         <textarea style={{...input,minHeight:90}} name="description" placeholder="Description" required/>
+
+        <div style={uploadBox}>
+          <strong style={{fontSize:18,color:"#5b120f"}}>Product Picture Upload</strong>
+          <span style={{fontSize:13,color:"#765f54"}}>Tap below to choose a product photo from your phone or computer.</span>
+          <input style={{...input,padding:14,background:"#fff"}} type="file" accept="image/*" onChange={e=>setImage(e.target.files?.[0]||null)} />
+          {image&&<small style={{color:"#5b120f",fontWeight:700}}>Selected: {image.name}</small>}
+        </div>
+
         <div style={grid}><input style={input} name="price" type="number" min="0" step="0.01" placeholder="Price" required/><input style={input} name="compare_at_price" type="number" min="0" step="0.01" placeholder="Old price (optional)"/><input style={input} name="stock" type="number" min="0" placeholder="Stock" required/></div>
         <div style={grid}><input style={input} name="sizes" placeholder="Sizes: S, M, L"/><input style={input} name="colors" placeholder="Colors: Black, Maroon"/></div>
-        <label>Product picture<br/><input type="file" accept="image/*" onChange={e=>setImage(e.target.files?.[0]||null)} /></label>
         <label><input type="checkbox" name="featured"/> Featured product</label>
         <button style={btn} disabled={busy}>Add Product</button>
       </form></section>
