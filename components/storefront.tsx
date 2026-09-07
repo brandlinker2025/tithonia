@@ -8,7 +8,7 @@ import type { CartItem, Product } from "@/lib/types";
 const KEY="tithonia-cart-v1";
 const categories=["T-Shirt","Three Piece","Saree","Shoes","Western","Tops","Skirt","Formal","Kurti","Dress","Gown","Co-ord Set","Jeans","Pants","Panjabi","Abaya","Hijab","Bags","Accessories"] as const;
 const money=(n:number)=>new Intl.NumberFormat("en-BD").format(n);
-const LOGO="/tithonia-logo.jpg",PHONE="01626896050",EMAIL="tithonia.online@gmail.com",ADDRESS="East Monipur, Mirpur-10, Dhaka, Bangladesh",FACEBOOK="https://www.facebook.com/share/1ESoX24JPy/?mibextid=wwXIfr",MAPS="https://www.google.com/maps/search/?api=1&query=East+Monipur+Mirpur-10+Dhaka";
+const LOGO="/tithonia-logo.jpg",PHONE="01626896050",EMAIL="tithonia.online@gmail.com",ADDRESS="Head Office: 1254, East Monipur, Dhaka, Bangladesh",FACEBOOK="https://www.facebook.com/share/1ESoX24JPy/?mibextid=wwXIfr",MAPS="https://www.google.com/maps/search/?api=1&query=1254+East+Monipur+Dhaka";
 
 export default function Storefront(){
  const[products,setProducts]=useState<Product[]>([]),[cart,setCart]=useState<CartItem[]>([]),[menuOpen,setMenuOpen]=useState(false),[active,setActive]=useState("All"),[selected,setSelected]=useState<Product|null>(null),[size,setSize]=useState(""),[color,setColor]=useState("");
