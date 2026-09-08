@@ -12,6 +12,7 @@ const targets:Record<string,string>={
 
 export default function NavFix(){
   useEffect(()=>{
+    document.documentElement.setAttribute("data-tithonia-path",window.location.pathname);
     const cleanups:Array<()=>void>=[];
     const apply=()=>{
       document.querySelectorAll<HTMLAnchorElement>(".main-nav a").forEach(a=>{
@@ -36,6 +37,7 @@ export default function NavFix(){
   },[]);
 
   return <style>{`
+    html[data-tithonia-path="/"] .story,html[data-tithonia-path="/"] .contact{display:none!important}
     .main-nav{display:flex;align-items:center;gap:10px}
     .main-nav a{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:9px 16px;border:1px solid #dfc5aa;border-radius:999px;background:linear-gradient(180deg,#fffaf3,#f7eadc);color:#5b120f!important;text-decoration:none!important;font-weight:800;letter-spacing:.02em;box-shadow:0 6px 16px rgba(91,18,15,.08);transition:transform .18s ease,box-shadow .18s ease,background .18s ease,color .18s ease,border-color .18s ease;cursor:pointer;white-space:nowrap}
     .main-nav a:hover{transform:translateY(-1px);background:linear-gradient(135deg,#5b120f,#7a201b);color:#fff!important;border-color:#5b120f;box-shadow:0 10px 22px rgba(91,18,15,.18)}
