@@ -1,2 +1,3 @@
 import Storefront from "@/components/storefront";
-export default function Page(){return <Storefront/>;}
+import HomeFeaturedProducts from "@/components/home-featured-products";
+export default function Page(){return <><Storefront/><HomeFeaturedProducts/></>;}
