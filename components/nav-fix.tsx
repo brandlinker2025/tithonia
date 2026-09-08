@@ -6,8 +6,8 @@ const targets:Record<string,string>={
   Home:"/",
   Products:"/shop",
   Collections:"/shop#shop",
-  About:"/#story",
-  Contact:"/#contact",
+  About:"/about",
+  Contact:"/about#contact",
 };
 
 export default function NavFix(){
