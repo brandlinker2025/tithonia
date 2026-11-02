@@ -1,3 +1,9 @@
-import Storefront from "@/components/storefront";
-import HomeFeaturedProducts from "@/components/home-featured-products";
-export default function Page(){return <><Storefront/><HomeFeaturedProducts/></>;}
+import HomeView from "@/components/home-view";
+import { loadProducts } from "@/lib/products";
+
+export const revalidate = 60;
+
+export default async function Page() {
+  const products = await loadProducts();
+  return <HomeView products={products} />;
+}

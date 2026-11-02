@@ -1,1 +1,4 @@
-.product-image{height:auto!important;aspect-ratio:4/5;overflow:hidden;background:#f2e8dc}.product-image>img{width:100%;height:100%;object-fit:cover;object-position:center}.product-fallback{width:100%;height:100%;display:grid;place-items:center}.product-fallback img{width:42%;height:auto;object-fit:contain}
+.product-image{height:auto!important;aspect-ratio:3/4;overflow:hidden;background:#f2e8dc;position:relative}
+.product-image>img,.product-image .product-photo{width:100%;height:100%;object-fit:cover;object-position:center}
+.product-fallback{width:100%;height:100%;min-height:220px;display:grid;place-items:center;background:linear-gradient(145deg,#ead7c2,#c9a888);color:#5b120f;font-weight:700;text-align:center;padding:16px}
+.product-fallback.tall{min-height:420px}

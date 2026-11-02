@@ -1,16 +1,139 @@
 "use client";
-import {useEffect,useMemo,useState} from "react";
+
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type {CartItem} from "@/lib/types";
-const KEY="tithonia-cart-v1",DELIVERY_KEY="tithonia-delivery-zone";
-const unitPrice=(p:CartItem)=>p.dealerPrice!=null&&p.qty>=(p.dealerMinQty||10)?p.dealerPrice:p.price;
-type Zone="inside"|"outside";
-export default function Checkout(){
- const[cart,setCart]=useState<CartItem[]>([]),[msg,setMsg]=useState(""),[busy,setBusy]=useState(false),[zone,setZone]=useState<Zone|null>(null),[orderNo,setOrderNo]=useState("");
- useEffect(()=>{try{setCart(JSON.parse(localStorage.getItem(KEY)||"[]"));const z=localStorage.getItem(DELIVERY_KEY);if(z==="inside"||z==="outside")setZone(z)}catch{}},[]);
- const subtotal=useMemo(()=>cart.reduce((s,p)=>s+unitPrice(p)*p.qty,0),[cart]);
- const shipping=zone==="inside"?80:zone==="outside"?150:0;
- const total=subtotal+shipping;
- async function submit(e:React.FormEvent<HTMLFormElement>){e.preventDefault();if(!zone){setMsg("Please select a delivery area from the product page.");return}setBusy(true);setMsg("");const f=new FormData(e.currentTarget);const body={customer:{name:String(f.get("name")||""),phone:String(f.get("phone")||""),email:"",address:String(f.get("address")||""),city:String(f.get("city")||"")},payment_method:"cod",delivery_zone:zone,discount_code:String(f.get("discount")||""),items:cart.map(p=>({product_id:p.id,qty:p.qty,size:p.selectedSize,color:p.selectedColor}))};try{const r=await fetch("/api/orders",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await r.json();if(!r.ok)throw new Error(j.error);localStorage.removeItem(KEY);localStorage.removeItem(DELIVERY_KEY);setOrderNo(j.order_no);setCart([])}catch(x:any){setMsg(x.message||"Could not place order")}finally{setBusy(false)}}
- if(orderNo)return <main className="wrap shop" style={{maxWidth:760,paddingTop:50}}><div style={{background:"#fff",border:"1px solid #eadfd4",padding:28,borderRadius:14}}><h2 style={{marginTop:0}}>Order Confirmed</h2><p><b>Order {orderNo} received successfully.</b></p><p>Thank you for shopping with TITHONIA. Our team will contact you to confirm your order and delivery details.</p><Link href="/" className="primary">CONTINUE SHOPPING</Link></div></main>;
- return <main className="wrap shop" style={{maxWidth:900}}><Link href="/">← Back to Tithonia</Link><h2>Checkout</h2>{msg&&<p style={{color:"#7a1712"}}><b>{msg}</b></p>}{!cart.length?<div style={{background:"#fff",padding:24,border:"1px solid #eadfd4"}}><p>Your bag is empty.</p><Link href="/" className="primary">BACK TO SHOP</Link></div>:<><div style={{background:"#fff",border:"1px solid #eadfd4",padding:18,marginBottom:18,borderRadius:10}}><b>Order Summary</b>{cart.map((p,i)=><div key={`${p.id}-${i}`} style={{display:"flex",justifyContent:"space-between",gap:12,padding:"10px 0",borderBottom:"1px solid #f0e5da"}}><span>{p.name}{p.selectedSize?` · ${p.selectedSize}`:""}{p.selectedColor?` · ${p.selectedColor}`:""} × {p.qty}</span><b>৳{(unitPrice(p)*p.qty).toLocaleString()}</b></div>)}<div style={{display:"grid",gap:6,paddingTop:12}}><span>Subtotal: <b>৳{subtotal.toLocaleString()}</b></span><span>Delivery ({zone==="inside"?"Inside Dhaka":"Outside Dhaka"}): <b>৳{shipping}</b></span><span style={{fontSize:18}}>Total: <b>৳{total.toLocaleString()}</b></span></div></div>{cart.some(p=>p.dealerPrice!=null&&p.qty>=(p.dealerMinQty||10))&&<p><b>Dealer price applied automatically.</b></p>}<form onSubmit={submit} style={{maxWidth:620,display:"grid",gap:14}}><input name="name" required placeholder="Full name" style={{padding:14}}/><input name="phone" required placeholder="Mobile number" style={{padding:14}}/><textarea name="address" required placeholder="Complete delivery address" style={{padding:14,minHeight:90}}/><input name="city" required placeholder="City / District" style={{padding:14}}/><input name="discount" placeholder="Discount code (optional)" style={{padding:14}}/><p>Payment: <b>Cash on Delivery</b></p><button className="button" disabled={busy||!cart.length||!zone} style={{padding:14,background:"#5b120f",color:"#fff",border:0,cursor:"pointer"}}>{busy?"Processing...":"PLACE COD ORDER"}</button></form></>}</main>}
+import type { CartItem } from "@/lib/types";
+import { CART_KEY, DELIVERY_KEY } from "@/lib/site";
+import { writeCart } from "@/lib/cart";
+
+const unitPrice = (p: CartItem) => p.dealerPrice != null && p.qty >= (p.dealerMinQty || 10) ? p.dealerPrice : p.price;
+type Zone = "inside" | "outside";
+
+export default function Checkout() {
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [zone, setZone] = useState<Zone | null>(null);
+  const [orderNo, setOrderNo] = useState("");
+
+  useEffect(() => {
+    try {
+      setCart(JSON.parse(localStorage.getItem(CART_KEY) || "[]"));
+      const z = localStorage.getItem(DELIVERY_KEY);
+      if (z === "inside" || z === "outside") setZone(z);
+    } catch {}
+  }, []);
+
+  const subtotal = useMemo(() => cart.reduce((s, p) => s + unitPrice(p) * p.qty, 0), [cart]);
+  const shipping = zone === "inside" ? 80 : zone === "outside" ? 150 : 0;
+  const total = subtotal + shipping;
+
+  function chooseZone(next: Zone) {
+    setZone(next);
+    localStorage.setItem(DELIVERY_KEY, next);
+  }
+
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!zone) {
+      setMsg("Please select a delivery area.");
+      return;
+    }
+    setBusy(true);
+    setMsg("");
+    const f = new FormData(e.currentTarget);
+    const body = {
+      customer: {
+        name: String(f.get("name") || ""),
+        phone: String(f.get("phone") || ""),
+        email: "",
+        address: String(f.get("address") || ""),
+        city: String(f.get("city") || ""),
+      },
+      payment_method: "cod",
+      delivery_zone: zone,
+      discount_code: String(f.get("discount") || ""),
+      items: cart.map((p) => ({ product_id: p.id, qty: p.qty, size: p.selectedSize, color: p.selectedColor })),
+    };
+    try {
+      const r = await fetch("/api/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error);
+      writeCart([]);
+      localStorage.removeItem(DELIVERY_KEY);
+      setOrderNo(j.order_no);
+      setCart([]);
+    } catch (x: any) {
+      setMsg(x.message || "Could not place order");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (orderNo) {
+    return (
+      <main id="main" className="wrap shop" style={{ maxWidth: 760, paddingTop: 50 }}>
+        <div style={{ background: "#fff", border: "1px solid #eadfd4", padding: 28, borderRadius: 14 }}>
+          <h1 style={{ marginTop: 0, fontSize: 32 }}>Order Confirmed</h1>
+          <p><b>Order {orderNo} received successfully.</b></p>
+          <p>Thank you for shopping with TITHONIA. Our team will contact you to confirm your order and delivery details.</p>
+          <Link href="/" className="primary">CONTINUE SHOPPING</Link>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main id="main" className="wrap shop" style={{ maxWidth: 900 }}>
+      <Link href="/shop">← Back to shop</Link>
+      <h1>Checkout</h1>
+      {msg && <p style={{ color: "#7a1712" }}><b>{msg}</b></p>}
+      {!cart.length ? (
+        <div style={{ background: "#fff", padding: 24, border: "1px solid #eadfd4" }}>
+          <p>Your bag is empty.</p>
+          <Link href="/shop" className="primary">BACK TO SHOP</Link>
+        </div>
+      ) : (
+        <>
+          <div style={{ background: "#fff", border: "1px solid #eadfd4", padding: 18, marginBottom: 18, borderRadius: 10 }}>
+            <b>Order Summary</b>
+            {cart.map((p, i) => (
+              <div key={`${p.id}-${i}`} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "10px 0", borderBottom: "1px solid #f0e5da" }}>
+                <span>{p.name}{p.selectedSize ? ` · ${p.selectedSize}` : ""}{p.selectedColor ? ` · ${p.selectedColor}` : ""} × {p.qty}</span>
+                <b>৳{(unitPrice(p) * p.qty).toLocaleString()}</b>
+              </div>
+            ))}
+            <div className="zone-picker">
+              <p>Delivery area</p>
+              <label className={zone === "inside" ? "active" : ""}>
+                <input type="radio" name="delivery-area" checked={zone === "inside"} onChange={() => chooseZone("inside")} />
+                Inside Dhaka · ৳80
+              </label>
+              <label className={zone === "outside" ? "active" : ""}>
+                <input type="radio" name="delivery-area" checked={zone === "outside"} onChange={() => chooseZone("outside")} />
+                Outside Dhaka · ৳150
+              </label>
+            </div>
+            <div style={{ display: "grid", gap: 6, paddingTop: 12 }}>
+              <span>Subtotal: <b>৳{subtotal.toLocaleString()}</b></span>
+              <span>Delivery ({zone === "inside" ? "Inside Dhaka" : zone === "outside" ? "Outside Dhaka" : "select area"}): <b>৳{shipping}</b></span>
+              <span style={{ fontSize: 18 }}>Total: <b>৳{total.toLocaleString()}</b></span>
+            </div>
+          </div>
+          {cart.some((p) => p.dealerPrice != null && p.qty >= (p.dealerMinQty || 10)) && <p><b>Dealer price applied automatically.</b></p>}
+          <form onSubmit={submit} style={{ maxWidth: 620, display: "grid", gap: 14 }}>
+            <input name="name" required placeholder="Full name" style={{ padding: 14, minHeight: 44 }} />
+            <input name="phone" required placeholder="Mobile number" style={{ padding: 14, minHeight: 44 }} />
+            <textarea name="address" required placeholder="Complete delivery address" style={{ padding: 14, minHeight: 90 }} />
+            <input name="city" required placeholder="City / District" style={{ padding: 14, minHeight: 44 }} />
+            <input name="discount" placeholder="Discount code (optional)" style={{ padding: 14, minHeight: 44 }} />
+            <p>Payment: <b>Cash on Delivery</b></p>
+            <button className="button primary" disabled={busy || !cart.length || !zone} style={{ minHeight: 44, border: 0, cursor: "pointer" }}>
+              {busy ? "Processing..." : "PLACE COD ORDER"}
+            </button>
+          </form>
+        </>
+      )}
+    </main>
+  );
+}
