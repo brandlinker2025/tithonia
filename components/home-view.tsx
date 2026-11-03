@@ -9,18 +9,13 @@ import JsonLd from "@/components/json-ld";
 import { faqJsonLd, organizationJsonLd } from "@/lib/seo";
 import { hasValidImage, validImageUrls } from "@/lib/has-valid-image";
 
-function productKeys(product: Product) {
-  const name = product.name.trim().toLowerCase().replace(/\s+/g, " ");
-  return [product.id, `name:${name}`];
-}
-
+// De-duplicate by product ID only. Different products that share a name must all show.
 function uniqueProducts(products: Product[], blocked = new Set<string>()) {
   const seen = new Set(blocked);
   const unique: Product[] = [];
   for (const product of products) {
-    const keys = productKeys(product);
-    if (keys.some((key) => seen.has(key))) continue;
-    keys.forEach((key) => seen.add(key));
+    if (seen.has(product.id)) continue;
+    seen.add(product.id);
     unique.push(product);
   }
   return unique;
@@ -75,10 +70,11 @@ export default function HomeView({ products }: { products: Product[] }) {
     return Date.parse(b.createdAt || "") - Date.parse(a.createdAt || "");
   });
   const featured = uniqueProducts(byFeatured).slice(0, 8);
-  const featuredKeys = new Set(featured.flatMap(productKeys));
-  const byNewest = [...pictured].sort((a, b) => Date.parse(b.createdAt || "") - Date.parse(a.createdAt || ""));
-  const otherArrivals = uniqueProducts(byNewest, featuredKeys);
-  const arrivals = otherArrivals.length ? otherArrivals.slice(0, 8) : [];
+  const featuredIds = new Set(featured.map((product) => product.id));
+  const byNewest = uniqueProducts([...pictured].sort((a, b) => Date.parse(b.createdAt || "") - Date.parse(a.createdAt || "")));
+  const otherArrivals = uniqueProducts(byNewest, featuredIds);
+  // Prefer products not already in Featured; if too few remain, show the newest anyway so the page never looks empty.
+  const arrivals = (otherArrivals.length >= 4 ? otherArrivals : byNewest).slice(0, 8);
   return (
     <main id="main">
       <JsonLd data={organizationJsonLd()} />
