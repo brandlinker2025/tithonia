@@ -9,11 +9,22 @@ import JsonLd from "@/components/json-ld";
 import { faqJsonLd, organizationJsonLd } from "@/lib/seo";
 import { hasValidImage, validImageUrls } from "@/lib/has-valid-image";
 
-const TESTIMONIALS = [
-  { name: "Ayesha R.", city: "Dhaka", quote: "The co-ord set felt premium and the Cash on Delivery was easy. TODO: replace with a real customer review." },
-  { name: "Nusrat K.", city: "Chattogram", quote: "Loved the three-piece colour and fit. TODO: replace with a real customer review." },
-  { name: "Mahiya S.", city: "Sylhet", quote: "Quick delivery outside Dhaka and lovely finishing. TODO: replace with a real customer review." },
-];
+function productKeys(product: Product) {
+  const name = product.name.trim().toLowerCase().replace(/\s+/g, " ");
+  return [product.id, `name:${name}`];
+}
+
+function uniqueProducts(products: Product[], blocked = new Set<string>()) {
+  const seen = new Set(blocked);
+  const unique: Product[] = [];
+  for (const product of products) {
+    const keys = productKeys(product);
+    if (keys.some((key) => seen.has(key))) continue;
+    keys.forEach((key) => seen.add(key));
+    unique.push(product);
+  }
+  return unique;
+}
 
 function withDisplayImages(product: Product): Product {
   const images = validImageUrls(product);
@@ -58,8 +69,16 @@ function ProductSection({
 
 export default function HomeView({ products }: { products: Product[] }) {
   const pictured = products.filter(hasValidImage).map(withDisplayImages);
-  const featured = [...pictured].sort((a, b) => Number(b.featured) - Number(a.featured)).slice(0, 8);
-  const arrivals = [...pictured].sort((a, b) => Date.parse(b.createdAt || "") - Date.parse(a.createdAt || "")).slice(0, 8);
+  const byFeatured = [...pictured].sort((a, b) => {
+    const featuredRank = Number(Boolean(b.featured)) - Number(Boolean(a.featured));
+    if (featuredRank) return featuredRank;
+    return Date.parse(b.createdAt || "") - Date.parse(a.createdAt || "");
+  });
+  const featured = uniqueProducts(byFeatured).slice(0, 8);
+  const featuredKeys = new Set(featured.flatMap(productKeys));
+  const byNewest = [...pictured].sort((a, b) => Date.parse(b.createdAt || "") - Date.parse(a.createdAt || ""));
+  const otherArrivals = uniqueProducts(byNewest, featuredKeys);
+  const arrivals = otherArrivals.length ? otherArrivals.slice(0, 8) : [];
   return (
     <main id="main">
       <JsonLd data={organizationJsonLd()} />
@@ -135,22 +154,6 @@ export default function HomeView({ products }: { products: Product[] }) {
           <p>Tithonia is a women's fashion Bangladesh brand built for real wardrobes — not just occasion photos. From our Dhaka studio we curate premium Western Wear sourced from China and a trendy three-piece online shop that feels current, comfortable and well finished for workdays, weekends and family events.</p>
           <p>Whether you are dressing for the office in western wear Dhaka style or choosing a three-piece for celebrations, we keep prices honest and quality visible in the fabric, stitching and fit. Every order is packed for Cash on Delivery across Bangladesh, so you can shop online with the same ease as your neighbourhood store and pay when the parcel arrives.</p>
           <Link className="ghost light" href="/about">Read our story</Link>
-        </div>
-      </section>
-
-      <section className="home-section wrap">
-        <div className="section-title">
-          <p className="eyebrow">LOVED BY CUSTOMERS</p>
-          <h2>What women are saying</h2>
-        </div>
-        {/* TODO: Replace these three placeholder testimonials with real customer names, cities, and quotes. */}
-        <div className="testimonial-grid">
-          {TESTIMONIALS.map((item) => (
-            <blockquote key={item.name} className="testimonial">
-              <p>“{item.quote}”</p>
-              <cite>{item.name}, {item.city}</cite>
-            </blockquote>
-          ))}
         </div>
       </section>
 

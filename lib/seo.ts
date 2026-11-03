@@ -151,11 +151,11 @@ export const FAQS = [
   },
   {
     q: "How much is the delivery charge?",
-    a: "TODO: Confirm current delivery charges. Checkout currently uses ৳80 inside Dhaka and ৳150 outside Dhaka.",
+    a: "Delivery is ৳80 inside Dhaka and ৳150 outside Dhaka.",
   },
   {
     q: "What is the return or exchange policy?",
-    a: "TODO: Publish the official return/exchange window and conditions. Contact Tithonia on WhatsApp for size issues as soon as the parcel arrives.",
+    a: "Contact Tithonia on WhatsApp for size issues as soon as the parcel arrives.",
   },
   {
     q: "How do I order?",

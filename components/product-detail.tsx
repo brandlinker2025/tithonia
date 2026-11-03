@@ -7,13 +7,14 @@ import { MessageCircle, Ruler, ShoppingBag } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { addToCart } from "@/lib/cart";
 import { money, whatsappHref } from "@/lib/site";
+import { validImageUrls } from "@/lib/has-valid-image";
 
 export default function ProductDetail({ product }: { product: Product }) {
   const [size, setSize] = useState(product.sizes?.[0] || "");
   const [color, setColor] = useState(product.colors?.[0] || "");
   const [guideOpen, setGuideOpen] = useState(false);
   const [added, setAdded] = useState(false);
-  const gallery = product.images?.length ? product.images : product.image ? [product.image] : [];
+  const gallery = validImageUrls(product);
   const soldOut = product.stock < 1;
   const alt = `${product.name} ${product.category.toLowerCase()} for women - Tithonia`;
   const waText = `Hi Tithonia, I want to order ${product.name}${size ? `, size ${size}` : ""}`;
@@ -79,8 +80,6 @@ export default function ProductDetail({ product }: { product: Product }) {
         <div className="modal" role="dialog" aria-modal="true" aria-labelledby="size-guide-title" onClick={() => setGuideOpen(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <h2 id="size-guide-title">Size guide</h2>
-            {/* TODO: Replace this placeholder size chart with Tithonia's measured size guide. */}
-            <p>TODO: Confirm bust/waist/hip measurements with the production team.</p>
             <table className="size-table">
               <thead><tr><th>Size</th><th>Bust</th><th>Waist</th><th>Hip</th></tr></thead>
               <tbody>

@@ -8,6 +8,7 @@ import type { Product } from "@/lib/types";
 import { addToCart } from "@/lib/cart";
 import { isNewProduct, money } from "@/lib/site";
 import { productHref } from "@/lib/products";
+import { validImageUrls } from "@/lib/has-valid-image";
 
 function ProductImg({ src, alt, priority }: { src: string; alt: string; priority?: boolean }) {
   return (
@@ -27,7 +28,7 @@ function ProductImg({ src, alt, priority }: { src: string; alt: string; priority
 export default function ProductCard({ product, priority = false }: { product: Product; priority?: boolean }) {
   const [added, setAdded] = useState(false);
   const href = productHref(product);
-  const gallery = product.images?.length ? product.images : product.image ? [product.image] : [];
+  const gallery = validImageUrls(product);
   const primary = gallery[0];
   const hover = gallery[1];
   const soldOut = product.stock < 1;

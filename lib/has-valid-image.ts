@@ -1,6 +1,6 @@
 import type { Product } from "@/lib/types";
 
-type ImageCarrier = Pick<Product, "image" | "images">;
+type ImageCarrier = Pick<Product, "image" | "images"> & { image_url?: string | null };
 
 const PLACEHOLDER_IMAGE =
   /(?:placeholder|placehold\.|coming[-_\s]?soon|no[-_\s]?image|image[-_\s]?not[-_\s]?available|dummyimage|default[-_\s]?(?:image|photo|product))/i;
@@ -20,7 +20,7 @@ export function isValidImageUrl(value: unknown): value is string {
 /** Every usable image on a product, in gallery order, with the single `image` field included. */
 export function validImageUrls(product: ImageCarrier): string[] {
   const listed = Array.isArray(product.images) ? product.images : [];
-  const pool = [...listed, product.image];
+  const pool = [...listed, product.image, product.image_url];
   const seen = new Set<string>();
   const urls: string[] = [];
   for (const value of pool) {
