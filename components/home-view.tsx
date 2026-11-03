@@ -7,6 +7,7 @@ import { FAQS } from "@/lib/seo";
 import ProductCard from "@/components/product-card";
 import JsonLd from "@/components/json-ld";
 import { faqJsonLd, organizationJsonLd } from "@/lib/seo";
+import { hasValidImage, validImageUrls } from "@/lib/has-valid-image";
 
 const TESTIMONIALS = [
   { name: "Ayesha R.", city: "Dhaka", quote: "The co-ord set felt premium and the Cash on Delivery was easy. TODO: replace with a real customer review." },
@@ -14,9 +15,51 @@ const TESTIMONIALS = [
   { name: "Mahiya S.", city: "Sylhet", quote: "Quick delivery outside Dhaka and lovely finishing. TODO: replace with a real customer review." },
 ];
 
+function withDisplayImages(product: Product): Product {
+  const images = validImageUrls(product);
+  return { ...product, image: images[0] ?? null, images };
+}
+
+function ProductSection({
+  eyebrow,
+  title,
+  href,
+  linkLabel,
+  products,
+  keyPrefix = "",
+  priority = false,
+}: {
+  eyebrow: string;
+  title: string;
+  href: string;
+  linkLabel: string;
+  products: Product[];
+  keyPrefix?: string;
+  priority?: boolean;
+}) {
+  if (!products.length) return null;
+  return (
+    <section className="home-section wrap">
+      <div className="section-head">
+        <div>
+          <p className="eyebrow">{eyebrow}</p>
+          <h2>{title}</h2>
+        </div>
+        <Link className="view-all" href={href}>{linkLabel} <ArrowRight size={14} /></Link>
+      </div>
+      <div className="product-grid">
+        {products.map((product, index) => (
+          <ProductCard key={`${keyPrefix}${product.id}`} product={product} priority={priority && index < 4} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function HomeView({ products }: { products: Product[] }) {
-  const featured = [...products].sort((a, b) => Number(b.featured) - Number(a.featured)).slice(0, 8);
-  const arrivals = [...products].sort((a, b) => Date.parse(b.createdAt || "") - Date.parse(a.createdAt || "")).slice(0, 8);
+  const pictured = products.filter(hasValidImage).map(withDisplayImages);
+  const featured = [...pictured].sort((a, b) => Number(b.featured) - Number(a.featured)).slice(0, 8);
+  const arrivals = [...pictured].sort((a, b) => Date.parse(b.createdAt || "") - Date.parse(a.createdAt || "")).slice(0, 8);
   return (
     <main id="main">
       <JsonLd data={organizationJsonLd()} />
@@ -67,27 +110,23 @@ export default function HomeView({ products }: { products: Product[] }) {
         </div>
       </section>
 
-      <section className="home-section wrap">
-        <div className="section-head">
-          <div>
-            <p className="eyebrow">FEATURED</p>
-            <h2>Featured Products</h2>
-          </div>
-          <Link className="view-all" href="/shop">View all <ArrowRight size={14} /></Link>
-        </div>
-        <div className="product-grid">{featured.map((product, index) => <ProductCard key={product.id} product={product} priority={index < 4} />)}</div>
-      </section>
+      <ProductSection
+        eyebrow="FEATURED"
+        title="Featured Products"
+        href="/shop"
+        linkLabel="View all"
+        products={featured}
+        priority
+      />
 
-      <section className="home-section wrap">
-        <div className="section-head">
-          <div>
-            <p className="eyebrow">JUST IN</p>
-            <h2>New Arrivals</h2>
-          </div>
-          <Link className="view-all" href="/shop">Shop new <ArrowRight size={14} /></Link>
-        </div>
-        <div className="product-grid">{arrivals.map((product) => <ProductCard key={`new-${product.id}`} product={product} />)}</div>
-      </section>
+      <ProductSection
+        eyebrow="JUST IN"
+        title="New Arrivals"
+        href="/shop"
+        linkLabel="Shop new"
+        products={arrivals}
+        keyPrefix="new-"
+      />
 
       <section className="story about-block" id="story">
         <div className="story-copy">

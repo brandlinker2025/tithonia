@@ -156,7 +156,8 @@ footer{background:#211310;color:#eee3d9;padding:50px 0 28px;margin-top:24px}
   .wa-fab span{display:none}
 }
 @media(max-width:520px){
-  .product-grid,.trust-grid,.testimonial-grid,.footer-grid{grid-template-columns:1fr}
+  .trust-grid,.testimonial-grid,.footer-grid{grid-template-columns:1fr}
+  .product-grid{grid-template-columns:1fr 1fr}
   .hero-copy h1{font-size:32px}
 }
 @media(max-width:360px){
